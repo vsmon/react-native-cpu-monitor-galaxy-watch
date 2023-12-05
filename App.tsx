@@ -47,13 +47,13 @@ function App(): JSX.Element {
   const spinValue = useRef(new Animated.Value(0)).current;
   const [isVisibleModal, setIsVisibleModal] = useState<boolean>(false);
   const [serverAddress, setServerAddress] = useState<string>('');
-  const [token, setToken] = useState<string>('');
+  const [serverToken, setToken] = useState<string>('');
   const [passwordVisible, setPasswordVisible] = useState<boolean>(true);
 
   const AnimatedIcon = Animated.createAnimatedComponent(Icon);
 
   type serverData = {
-    serverAddress: string;
+    address: string;
     token: string;
   };
 
@@ -113,13 +113,9 @@ function App(): JSX.Element {
   }, [updateDate]);
 
   async function handleReload() {
-    //setRefreshing(true);
-    await getStoredData();
-    getData();
-
-    //setRefreshing(false);
+    await getStoredData().then(({address, token}) => getData(address, token));
   }
-  async function getData() {
+  async function getData(serverAddress: string, token: string) {
     scale.start();
     spinner.start();
 
@@ -146,7 +142,7 @@ function App(): JSX.Element {
       setTemperature(temp.toFixed(2));
       setUpdateDate(new Date());
     } catch (error) {
-      console.log('Ocorreu um erro ao obter os dados', error);
+      console.log('Ocorreu um erro ao obter os dados da API', error);
       tostMessage(`${error}`);
     }
   }
@@ -163,20 +159,24 @@ function App(): JSX.Element {
     }
   }
 
-  async function getStoredData() {
+  async function getStoredData(): Promise<serverData | any> {
     try {
       const value = await AsyncStorage.getItem('server-address');
       if (value !== null) {
-        const data: serverData = await JSON.parse(value);
+        const {address, token}: serverData = await JSON.parse(value);
 
         // value previously stored
-        setServerAddress(data.serverAddress);
-        setToken(data.token);
-        return value;
+        setServerAddress(address);
+        setToken(token);
+        return await Promise.resolve({
+          address,
+          token,
+        });
       }
     } catch (e) {
       // error reading value
-      console.log('Ocorreu um erro ao obter os dados', e);
+      console.log('Ocorreu um erro ao obter os dados armazenados', e);
+      return;
     }
   }
 
@@ -223,11 +223,11 @@ function App(): JSX.Element {
 
           <TextInput
             style={{
-              padding: 2,
+              padding: 5,
               backgroundColor: '#FFF9',
               height: 40,
               width: Dimensions.get('window').width - 30,
-              borderRadius: 5,
+              borderRadius: 20,
               marginTop: 10,
               marginBottom: 5,
               fontSize: 18,
@@ -243,24 +243,24 @@ function App(): JSX.Element {
               flexDirection: 'row',
               alignItems: 'center',
               backgroundColor: '#FFF9',
-              borderRadius: 5,
+              borderRadius: 20,
               marginBottom: 5,
               width: Dimensions.get('window').width - 30,
               height: 40,
             }}>
             <TextInput
               style={{
-                padding: 2,
+                padding: 5,
                 //backgroundColor: '#FFF9',
                 height: 40,
-                width: Dimensions.get('window').width - 50,
+                width: Dimensions.get('window').width - 60,
                 //borderRadius: 5,
                 //marginBottom: 5,
                 fontSize: 18,
               }}
               placeholder="Token..."
               placeholderTextColor="#FFF6"
-              value={token}
+              value={serverToken}
               onChangeText={text => setToken(text)}
               secureTextEntry={passwordVisible}
               autoCapitalize="none"
@@ -269,7 +269,7 @@ function App(): JSX.Element {
             <AnimatedIcon
               name={passwordVisible ? 'eye' : 'eye-off'}
               onPress={() => setPasswordVisible(!passwordVisible)}
-              size={20}
+              size={30}
               color={'#232323'}
               style={{}}
             />
@@ -279,7 +279,9 @@ function App(): JSX.Element {
             name="content-save-all"
             color="#2194A4"
             size={42}
-            onPress={() => storeData({serverAddress, token})}
+            onPress={() =>
+              storeData({address: serverAddress, token: serverToken})
+            }
           />
         </View>
       </Modal>
@@ -320,7 +322,7 @@ function App(): JSX.Element {
         <AnimatedIcon
           name="reload"
           color="green"
-          size={52}
+          size={42}
           onPress={handleReload}
           style={{transform: [{rotate: spin}]}}
           onPressIn={() => spinner.start()}
@@ -343,12 +345,12 @@ const styles = StyleSheet.create({
     width: screenWidth,
   },
   textTitle: {
-    fontSize: 18,
+    fontSize: 12,
     fontFamily: 'Arial',
   },
   textData: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 48,
+    //fontWeight: 'bold',
     textAlign: 'center',
     alignSelf: 'center',
   },
