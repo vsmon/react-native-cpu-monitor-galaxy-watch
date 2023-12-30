@@ -119,17 +119,19 @@ function App(): JSX.Element {
     scale.start();
     spinner.start();
 
+    const URL =
+      token !== ''
+        ? `http://${serverAddress}/temperature?token=${token}`
+        : `http://${serverAddress}/temperature`;
+
     try {
-      const response = await fetch(
-        `http://${serverAddress}/temperature?token=${token}`,
-        {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
+      const response = await fetch(URL, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
         },
-      );
+      });
 
       if (response.status == 401) {
         console.log('OCORREU UM ERRO: ', response);
